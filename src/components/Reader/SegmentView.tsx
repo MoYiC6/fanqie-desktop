@@ -14,7 +14,7 @@ function scopeFont(css: string, chapterId: string) {
 }
 
 /** 一章正文。滚动模式下是章节流里的一段，翻页模式下单独分页；单独 memo，更新进度时不重渲染段落 */
-const SegmentView = memo(function SegmentView({ seg, fontStack, loggedIn, onComment, onRetry, onLogin, marked }: {
+const SegmentView = memo(function SegmentView({ seg, fontStack, loggedIn, onComment, onRetry, onLogin, marked, onStartListen }: {
   seg: Segment;
   /** 本章有书签的段号 */
   marked?: Set<number>;
@@ -23,6 +23,8 @@ const SegmentView = memo(function SegmentView({ seg, fontStack, loggedIn, onComm
   onComment: (p: CommentPara) => void;
   onRetry: (chapterId: string) => void;
   onLogin: () => void;
+  /** 双击某段：从该段开始听书。点到按钮/链接时不触发，避免和段评双触发 */
+  onStartListen?: (chapterId: string, para: number) => void;
 }) {
   const { chapter, status, content, fontCss, paraIdx, commentStats } = seg;
   const font = fontCss ? scopeFont(fontCss, chapter.id) : null;
@@ -32,7 +34,13 @@ const SegmentView = memo(function SegmentView({ seg, fontStack, loggedIn, onComm
       data-seg={chapter.id}
       style={font ? { fontFamily: `"${font.family}", ${fontStack}` } : undefined}
     >
-      <h2 className={`reader-chapter-title reader-anchor${marked?.has(0) ? ' marked' : ''}`} data-ch={chapter.id} data-para={0}>
+      <h2
+        className={`reader-chapter-title reader-anchor${marked?.has(0) ? ' marked' : ''}`} data-ch={chapter.id} data-para={0}
+        onDoubleClick={(e) => {
+          if ((e.target as HTMLElement).closest('button, a')) return;
+          onStartListen?.(chapter.id, 0);
+        }}
+      >
         {chapter.title}
       </h2>
       {/* 放在标题后面，标题才是 first-child，不多出上边距 */}
@@ -52,7 +60,14 @@ const SegmentView = memo(function SegmentView({ seg, fontStack, loggedIn, onComm
         const idx = paraIdx[i] ?? -1;
         const count = commentStats[idx] || 0;
         return (
-          <p key={i} className={`reader-para reader-anchor${marked?.has(i) ? ' marked' : ''}`} data-ch={chapter.id} data-para={i}>
+          <p
+            key={i}
+            className={`reader-para reader-anchor${marked?.has(i) ? ' marked' : ''}`} data-ch={chapter.id} data-para={i}
+            onDoubleClick={(e) => {
+              if ((e.target as HTMLElement).closest('button, a')) return;
+              onStartListen?.(chapter.id, i);
+            }}
+          >
             {idx >= 0 ? (
               <>
                 {text.slice(0, -1)}

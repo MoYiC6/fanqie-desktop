@@ -429,6 +429,18 @@ export default function Reader() {
     setListenFrom({ chapterId: pos.ch, para: Math.max(0, seg?.paraIdx[pos.para] ?? 0) });
   };
 
+  /** 双击某段：从该段开始听。para 是原始行号，换算成段评同款 idx 和音频时间轴对上。
+   *  只在已开启听书时生效，没开听书时双击不改状态，避免误触直接起播。
+   *  回调必须稳定：SegmentView 有 memo，换新引用会让整章段落白渲染一遍，
+   *  所以用函数式更新读当前是否在听，而不是把 listenFrom 放进依赖 */
+  const startListenFrom = useCallback((chapterId: string, para: number) => {
+    setListenFrom((cur) => {
+      if (!cur) return cur;
+      const seg = useReader.getState().segments.find((g) => g.chapter.id === chapterId);
+      return { chapterId, para: Math.max(0, seg?.paraIdx[para] ?? 0) };
+    });
+  }, []);
+
   const onComment = useCallback((p: CommentPara) => {
     setCommentCh(p.chapterId);
     setCommentPara(p);
@@ -534,6 +546,7 @@ export default function Reader() {
             onEdge={(dir) => turnChapter(dir, dir < 0)}
             onToggleChrome={() => setChromeVisible((v) => !v)}
             marked={marks.get(currentId)}
+            onStartListen={startListenFrom}
           />
         ) : (
         <div className="reader-body" ref={bodyRef} onScroll={onScroll}>
@@ -559,6 +572,7 @@ export default function Reader() {
                   onRetry={retry}
                   onLogin={openLogin}
                   marked={marks.get(seg.chapter.id)}
+                  onStartListen={startListenFrom}
                 />
               ))}
             </div>

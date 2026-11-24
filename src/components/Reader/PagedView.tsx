@@ -34,6 +34,8 @@ interface Props {
   onEdge: (dir: 1 | -1) => void;
   onToggleChrome: () => void;
   marked?: Set<number>;
+  /** 双击某段：从该段开始听书，透传给 SegmentView */
+  onStartListen?: (chapterId: string, para: number) => void;
 }
 
 /** 两页之间、栏与栏之间的空隙 */
@@ -220,6 +222,7 @@ const PagedView = forwardRef<PagedHandle, Props>(function PagedView(props, ref) 
               onRetry={props.onRetry}
               onLogin={props.onLogin}
               marked={props.marked}
+              onStartListen={props.onStartListen}
             />
           )}
         </div>

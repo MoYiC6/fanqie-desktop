@@ -52,6 +52,9 @@ export default function AudioBar({ bookId, bookTitle, bodyRef, start, onFollow, 
   const posRef = useRef({ chapterId: start.chapterId, para: start.para });
   // 换章、换音色时作废还在路上的请求
   const tokenRef = useRef(0);
+  // 最新音色：双击切段的 effect 从 ref 取，避免依赖 toneKey 导致换音色时重复播放
+  const toneKeyRef = useRef(toneKey);
+  toneKeyRef.current = toneKey;
 
   const chapters = useReader((s) => s.chapters);
   const chapter = chapters.find((c) => c.id === chapterId);
@@ -190,6 +193,13 @@ export default function AudioBar({ bookId, bookTitle, bodyRef, start, onFollow, 
     });
     return () => { alive = false; };
   }, [bookId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 首次播放由上面的音色加载流程接管；之后 start 变化（双击切段）才从新段落重新播放
+  const firstStartRef = useRef(true);
+  useEffect(() => {
+    if (firstStartRef.current) { firstStartRef.current = false; return; }
+    playChapter(start.chapterId, start.para, toneKeyRef.current);
+  }, [start]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const audio = audioRef.current;
